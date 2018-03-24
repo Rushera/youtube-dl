@@ -2,8 +2,10 @@ language: python
 python:
   - "3.6"
 
-script: python setup.py bdist_wheel --universal
-script: cp dist/*.whl dist/youtube_dl-latest-py2.py3-none-any.whl
+script: 
+  - python setup.py bdist_wheel --universal
+  - ls -al dist
+  - cp dist/*.whl dist/youtube_dl-latest-py2.py3-none-any.whl
 deploy:
   provider: releases
   api_key: ${GITHUB_TOKEN}
