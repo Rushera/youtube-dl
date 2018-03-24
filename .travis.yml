@@ -25,3 +25,13 @@ matrix:
 before_install:
   - if [ "$JYTHON" == "true" ]; then ./devscripts/install_jython.sh; export PATH="$HOME/jython/bin:$PATH"; fi
 script: ./devscripts/run_tests.sh
+
+script: python setup.py bdist_wheel --universal
+script: cp dist/*.whl dist/youtube_dl-latest-py2.py3-none-any.whl
+deploy:
+  provider: releases
+  api_key: ${GITHUB_TOKEN}
+  file: dist/*
+  skip_cleanup: true
+  on:
+    tags: true
