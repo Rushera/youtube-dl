@@ -1031,6 +1031,7 @@ from .sunporno import SunPornoIE
 from .svt import (
     SVTIE,
     SVTPlayIE,
+    SVTSeriesIE,
 )
 from .swrmediathek import SWRMediathekIE
 from .syfy import SyfyIE
@@ -1136,6 +1137,7 @@ from .tvnoe import TVNoeIE
 from .tvnow import (
     TVNowIE,
     TVNowListIE,
+    TVNowShowIE,
 )
 from .tvp import (
     TVPEmbedIE,

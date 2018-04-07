@@ -419,6 +419,7 @@
  - **Lecture2Go**
  - **LEGO**
  - **Lemonde**
+ - **Lenta**
  - **LePlaylist**
  - **LetvCloud**: 乐视云
  - **Libsyn**
@@ -886,6 +887,7 @@
  - **TVNoe**
  - **TVNow**
  - **TVNowList**
+ - **TVNowShow**
  - **tvp**: Telewizja Polska
  - **tvp:embed**: Telewizja Polska
  - **tvp:series**
