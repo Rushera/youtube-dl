@@ -23,6 +23,7 @@ from ..utils import (
     is_html,
     js_to_json,
     KNOWN_EXTENSIONS,
+    merge_dicts,
     mimetype2ext,
     orderedSet,
     sanitized_Request,
@@ -58,6 +59,7 @@ from .xhamster import XHamsterEmbedIE
 from .tnaflix import TNAFlixNetworkEmbedIE
 from .drtuber import DrTuberIE
 from .redtube import RedTubeIE
+from .tube8 import Tube8IE
 from .vimeo import VimeoIE
 from .dailymotion import DailymotionIE
 from .dailymail import DailyMailIE
@@ -188,6 +190,16 @@ class GenericIE(InfoExtractor):
                 'upload_date': '20150228',
                 'title': 'pdv_maddow_netcast_m4v-02-27-2015-201624',
             }
+        },
+        # RSS feed with enclosures and unsupported link URLs
+        {
+            'url': 'http://www.hellointernet.fm/podcast?format=rss',
+            'info_dict': {
+                'id': 'http://www.hellointernet.fm/podcast?format=rss',
+                'description': 'CGP Grey and Brady Haran talk about YouTube, life, work, whatever.',
+                'title': 'Hello Internet',
+            },
+            'playlist_mincount': 100,
         },
         # SMIL from http://videolectures.net/promogram_igor_mekjavic_eng
         {
@@ -1219,7 +1231,7 @@ class GenericIE(InfoExtractor):
                 'title': '35871',
                 'timestamp': 1355743100,
                 'upload_date': '20121217',
-                'uploader_id': 'batchUser',
+                'uploader_id': 'cplapp@learn360.com',
             },
             'add_ie': ['Kaltura'],
         },
@@ -1267,6 +1279,39 @@ class GenericIE(InfoExtractor):
                 'upload_date': '20170403',
                 'uploader_id': 'batchUser',
                 'timestamp': 1491232186,
+            },
+            'add_ie': ['Kaltura'],
+        },
+        {
+            # Kaltura iframe embed, more sophisticated
+            'url': 'http://www.cns.nyu.edu/~eero/math-tools/Videos/lecture-05sep2017.html',
+            'info_dict': {
+                'id': '1_9gzouybz',
+                'ext': 'mp4',
+                'title': 'lecture-05sep2017',
+                'description': 'md5:40f347d91fd4ba047e511c5321064b49',
+                'upload_date': '20170913',
+                'uploader_id': 'eps2',
+                'timestamp': 1505340777,
+            },
+            'params': {
+                'skip_download': True,
+            },
+            'add_ie': ['Kaltura'],
+        },
+        {
+            # meta twitter:player
+            'url': 'http://thechive.com/2017/12/08/all-i-want-for-christmas-is-more-twerk/',
+            'info_dict': {
+                'id': '0_01b42zps',
+                'ext': 'mp4',
+                'title': 'Main Twerk (Video)',
+                'upload_date': '20171208',
+                'uploader_id': 'sebastian.salinas@thechive.com',
+                'timestamp': 1512713057,
+            },
+            'params': {
+                'skip_download': True,
             },
             'add_ie': ['Kaltura'],
         },
@@ -1967,7 +2012,17 @@ class GenericIE(InfoExtractor):
             'params': {
                 'skip_download': True,
             },
-        }
+        },
+        {
+            'url': 'http://share-videos.se/auto/video/83645793?uid=13',
+            'md5': 'b68d276de422ab07ee1d49388103f457',
+            'info_dict': {
+                'id': '83645793',
+                'title': 'Lock up and get excited',
+                'ext': 'mp4'
+            },
+            'skip': 'TODO: fix nested playlists processing in tests',
+        },
         # {
         #     # TODO: find another test
         #     # http://schema.org/VideoObject
@@ -1998,13 +2053,15 @@ class GenericIE(InfoExtractor):
 
         entries = []
         for it in doc.findall('./channel/item'):
-            next_url = xpath_text(it, 'link', fatal=False)
+            next_url = None
+            enclosure_nodes = it.findall('./enclosure')
+            for e in enclosure_nodes:
+                next_url = e.attrib.get('url')
+                if next_url:
+                    break
+
             if not next_url:
-                enclosure_nodes = it.findall('./enclosure')
-                for e in enclosure_nodes:
-                    next_url = e.attrib.get('url')
-                    if next_url:
-                        break
+                next_url = xpath_text(it, 'link', fatal=False)
 
             if not next_url:
                 continue
@@ -2546,6 +2603,11 @@ class GenericIE(InfoExtractor):
         if redtube_urls:
             return self.playlist_from_matches(redtube_urls, video_id, video_title, ie=RedTubeIE.ie_key())
 
+        # Look for embedded Tube8 player
+        tube8_urls = Tube8IE._extract_urls(webpage)
+        if tube8_urls:
+            return self.playlist_from_matches(tube8_urls, video_id, video_title, ie=Tube8IE.ie_key())
+
         # Look for embedded Tvigle player
         mobj = re.search(
             r'<iframe[^>]+?src=(["\'])(?P<url>(?:https?:)?//cloud\.tvigle\.ru/video/.+?)\1', webpage)
@@ -2963,20 +3025,12 @@ class GenericIE(InfoExtractor):
             return self.playlist_from_matches(
                 xfileshare_urls, video_id, video_title, ie=XFileShareIE.ie_key())
 
-        def merge_dicts(dict1, dict2):
-            merged = {}
-            for k, v in dict1.items():
-                if v is not None:
-                    merged[k] = v
-            for k, v in dict2.items():
-                if v is None:
-                    continue
-                if (k not in merged or
-                        (isinstance(v, compat_str) and v and
-                            isinstance(merged[k], compat_str) and
-                            not merged[k])):
-                    merged[k] = v
-            return merged
+        sharevideos_urls = [mobj.group('url') for mobj in re.finditer(
+            r'<iframe[^>]+?\bsrc\s*=\s*(["\'])(?P<url>(?:https?:)?//embed\.share-videos\.se/auto/embed/\d+\?.*?\buid=\d+.*?)\1',
+            webpage)]
+        if sharevideos_urls:
+            return self.playlist_from_matches(
+                sharevideos_urls, video_id, video_title)
 
         # Look for HTML5 media
         entries = self._parse_html5_media_entries(url, webpage, video_id, m3u8_id='hls')

@@ -326,7 +326,6 @@ from .espn import (
     FiveThirtyEightIE,
 )
 from .esri import EsriVideoIE
-from .etonline import ETOnlineIE
 from .europa import EuropaIE
 from .everyonesmixtape import EveryonesMixtapeIE
 from .expotv import ExpoTVIE
@@ -815,6 +814,10 @@ from .periscope import (
 from .philharmoniedeparis import PhilharmonieDeParisIE
 from .phoenix import PhoenixIE
 from .photobucket import PhotobucketIE
+from .picarto import (
+    PicartoIE,
+    PicartoVodIE,
+)
 from .piksel import PikselIE
 from .pinkbike import PinkbikeIE
 from .pladform import PladformIE
@@ -1415,5 +1418,11 @@ from .youtube import (
 )
 from .zapiks import ZapiksIE
 from .zaq1 import Zaq1IE
+from .zattoo import (
+    QuicklineIE,
+    QuicklineLiveIE,
+    ZattooIE,
+    ZattooLiveIE,
+)
 from .zdf import ZDFIE, ZDFChannelIE
 from .zingmp3 import ZingMp3IE
