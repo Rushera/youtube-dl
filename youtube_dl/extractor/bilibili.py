@@ -34,7 +34,7 @@ class BiliBiliIE(InfoExtractor):
                                 anime/(?P<anime_id>\d+)/play\#
                             )(?P<id_bv>\d+)|
                             video/[bB][vV](?P<id>[^/?#&]+)
-                        )
+                        )(?:/?\?p=(?P<page>\d+))?
                     '''
 
     _TESTS = [{
@@ -126,10 +126,14 @@ class BiliBiliIE(InfoExtractor):
         mobj = re.match(self._VALID_URL, url)
         video_id = mobj.group('id') or mobj.group('id_bv')
         anime_id = mobj.group('anime_id')
+        page_id = mobj.group('page')
         webpage = self._download_webpage(url, video_id)
 
         if 'anime/' not in url:
             cid = self._search_regex(
+                r'\bcid(?:["\']:|=)(\d+),["\']page(?:["\']:|=)' + str(page_id), webpage, 'cid',
+                default=None
+            ) or self._search_regex(
                 r'\bcid(?:["\']:|=)(\d+)', webpage, 'cid',
                 default=None
             ) or compat_parse_qs(self._search_regex(
@@ -209,7 +213,7 @@ class BiliBiliIE(InfoExtractor):
         title = self._html_search_regex(
             ('<h1[^>]+\btitle=(["\'])(?P<title>(?:(?!\1).)+)\1',
              '(?s)<h1[^>]*>(?P<title>.+?)</h1>'), webpage, 'title',
-            group='title')
+            group='title') + ('_p' + str(page_id) if page_id is not None else '')
         description = self._html_search_meta('description', webpage)
         timestamp = unified_timestamp(self._html_search_regex(
             r'<time[^>]+datetime="([^"]+)"', webpage, 'upload time',
@@ -219,7 +223,8 @@ class BiliBiliIE(InfoExtractor):
 
         # TODO 'view_count' requires deobfuscating Javascript
         info = {
-            'id': video_id,
+            'id': video_id if page_id is None else str(video_id) + '_p' + str(page_id),
+            'cid': cid,
             'title': title,
             'description': description,
             'timestamp': timestamp,
